@@ -37,6 +37,7 @@ KEYMAP.update(KEYS_KEYPAD)
 KEYS_SPECIAL = {
     "`": 0x35,
     "~": 0x35,
+    "#": 0x32,
     "ESC": 0x29,
     "BACKSPACE": 0x2A,
     "TAB": 0x2B,
@@ -91,6 +92,9 @@ KEYS_SPECIAL = {
     "|": 0x31,
     "<": 0x64,
     ">": 0x64,
+    "PRINT_SCREEN": 0x46,
+    "SCROLLLOCK": 0x47,
+    "PAUSE": 0x48
 }
 
 for character, addr in KEYS_SPECIAL.items():

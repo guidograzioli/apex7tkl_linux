@@ -1,2 +1,9 @@
 Pillow==8.3.2
 pyusb==1.0.2
+matplotlib
+dasbus
+python-daemon
+tqdm
+psutil
+PySensors
+humanize

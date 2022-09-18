@@ -2,16 +2,17 @@ import os
 import sys
 from time import sleep
 import traceback
-from cinematic import DefaultHardwareCinematic, cinematicBlink, cinematicManager, cinematicScene, cinematicText, cinematicTextStatic, cinematicTextDynamic
-
-from hardware import cpu, memory, user
+from cinematic import DefaultHardwareCinematic, cinematicManager, cinematicScene, cinematicTextStatic
 
 os.environ['LIBUSB_DEBUG'] = 'debug'
 import usb.core
 from usb.core import USBError
 import usb.util
 
+from monitor import Monitor
 import oled
+
+import threading
 
 DEFAULT_LEN = 642
 
@@ -60,6 +61,8 @@ class Device():
         self.target = None
         self.handle = None
         self._was_detached = None
+        self._paused = False
+        self.lock = threading.Lock()
 
     def __enter__ (self):
         self.target, self.handle = find_device()
@@ -78,16 +81,23 @@ class Device():
     def send(self, wValue = 0x300, reqType = 0x01, payload=None):
         if payload is None:
             raise Exception("payload cannot be null")
-        self.handle.ctrl_transfer(0x21,
-                0x09,
-                wValue,
-                reqType,
-                payload)
+        # try:
+        with self.lock:
+            self.handle.ctrl_transfer(0x21,
+                    0x09,
+                    wValue,
+                    reqType,
+                    payload)
+        # except usb.core.USBError as err:
+        #     print(f"Error connecting to USB device: {err.strerror}")
+        #     exit(-1)
 
     def send_colors(self, color_payload):
+        self._paused = True
         report = [0x3a, 0x69] + color_payload
         report = self.pad(report, DEFAULT_LEN)
         self.send(0x300, 0x01, report)
+        self._paused = False
 
     def set_config(self, config_id):
         report = [0x89] + [config_id]
@@ -99,15 +109,16 @@ class Device():
 
     def oled_image(self, filename):
         imagedata = oled.image_to_payload(filename)
-        if imagedata is list[int]:
-            report = self.target['oledPreamble'] + imagedata
-            self.send(0x300, 0x01, report)
-        else:
-            while True:
-                for it in imagedata:
-                    report = self.target['oledPreamble'] + it
-                    sleep(0.1)
-                    self.send(0x300, 0x01, report)
+        if isinstance(imagedata, list):
+            if isinstance(imagedata[0], int):
+                report = self.target['oledPreamble'] + imagedata
+                self.send(0x300, 0x01, report)
+            elif isinstance(imagedata[0], list):
+                while True:
+                    for it in imagedata:
+                        report = self.target['oledPreamble'] + it
+                        sleep(0.1)
+                        self.send(0x300, 0x01, report)
 
     def oled_text(self, text):
         imagedata = oled.text_payload(text)
@@ -115,47 +126,19 @@ class Device():
         self.send(0x300, 0x01, report)
 
     def oled_monitor(self):
-        cpuInfo = cpu()
-        usrInfo = user()
-        memInfo = memory()
-
+        mon = Monitor()
+        mng = DefaultHardwareCinematic(mon)
         while True:
-            ## print("RESTART")
-            mng = DefaultHardwareCinematic(cpuInfo, usrInfo, memInfo)
-            mng.restart()
             while mng.isEnded() == False:
                 for _ in range(0, 3):
-                    msg = mng.display()
-                    ## print("MSG START")
-                    ## print(msg)
-                    ## print("MSG END")
-                    imagedata = oled.text_payload(msg)
-                    report = self.target['oledPreamble'] + imagedata
-                    self.send(0x300, 0x01, report)
-                    sleep(0.1)
-                ## print("NEXT")
+                    if not self._paused:
+                        msg = mng.display()
+                        # print("MSG START")
+                        # print(msg)
+                        # print("MSG END")
+                        imagedata = oled.text_payload(msg)
+                        report = self.target['oledPreamble'] + imagedata
+                        self.send(0x300, 0x01, report)
+                        sleep(0.3)
                 mng.next()
-            ## print("UPDATE")
-            usrInfo.update()
-            memInfo.update()
-            cpuInfo.update()
-
-#printimage(full)
-#payload_to_image(full, "payload.png")
-#loaded = image_to_payload("payload.png")
-#printimage(loaded)
-#
-#printimage(text_payload("Hello World\nLine 2\nLine3"))
-#printimage(text_payload("Hello World\nLine 2\nOverflow 12345678901234567890"))
-#
-
-#cfg = dev.get_active_configuration()
-#print("config", cfg)
-#intf = cfg[(0, 0)]
-#
-#ep = usb.util.find_descriptor(intf,
-#        custom_match = \
-#            lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_OUT)
-#
-#print("endpoint", ep)
-
+            mng.restart()

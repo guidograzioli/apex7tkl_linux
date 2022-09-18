@@ -31,7 +31,7 @@ def oled_monitor():
 
 def set_colors(*colordef):
     l = list(colordef)
-
+    print(l)
     defs = {}
 
     while len(l) > 0:
@@ -50,6 +50,8 @@ def set_colors(*colordef):
 
     if len(defs) == 0:
         raise Exception("could not determine any color definitions")
+
+    print(defs)
 
     COLOR_PAYLOAD = []
     for keycode, color in defs.items():
@@ -70,8 +72,7 @@ COMMANDS = {
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    print(args, len(args))
-
+    
     if len(args) == 0:
         print("missing command. valid: %s" % ", ".join(COMMANDS.keys()))
         sys.exit(1)
