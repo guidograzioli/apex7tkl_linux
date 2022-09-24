@@ -44,9 +44,8 @@ class cinematicTextDynamic:
 
 class cinematicManager:
     def __init__(self, rendered):
-        print("mgr INIT")
         self.func = rendered
-        self.list = [ cinematicTextStatic(x, 21, 21) if len(x) < 22 else cinematicTextDynamic(x, len(x), ord(' ')) for x in self.func() ]
+        self.list = [ cinematicTextStatic(x, 21, 21) if len(x) < 22 else cinematicTextDynamic(x, 21, ord(' ')) for x in self.func() ]
 
     def isEnded(self) -> bool:
         for it in self.list:
@@ -56,7 +55,7 @@ class cinematicManager:
 
     def restart(self):
         print("mgr RESTART")
-        self.list = [ cinematicTextStatic(x, 21, 21) if len(x) < 22 else cinematicTextDynamic(x, len(x), ord(' ')) for x in self.func() ]
+        self.list = [ cinematicTextStatic(x, 21, 21) if len(x) < 22 else cinematicTextDynamic(x, 21, ord(' ')) for x in self.func() ]
         for it in self.list:
             it.restart()
 

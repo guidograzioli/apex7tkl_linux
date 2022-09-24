@@ -43,13 +43,13 @@ class Monitor:
 
 
     def callback(self, interface:str, properties_changed, Properties_invalid):
-        print("CALLBACK")
+        # print("CALLBACK")
         if 'Metadata' in properties_changed:
             metadata = properties_changed['Metadata']
             self.media_artist = ','.join(metadata['xesam:artist'])
             self.media_title = metadata['xesam:title']
             self.media_title += " ("+metadata['xesam:album']+")"
-            print("%s %s" % (self.media_artist, self.media_title))
+            # print("%s %s" % (self.media_artist, self.media_title))
 
 
     def dbuslisten(self):
@@ -72,18 +72,18 @@ class Monitor:
             sensors.init()
             try: 
                 for chip in sensors.iter_detected_chips():
+                    features = chip.adapter_name + '::'
                     for feature in chip:
-                        if 'temp' in feature.label:
-                            self.temp.append('%s: %.2f°C' % (feature.label, feature.get_value()))
-                            break
+                        if feature.type == 2:
+                            features += ' %s:%.1f°C ' % (feature.label.replace(' ','_'), feature.get_value())
+                    self.temp.append(features)
             finally:
                 sensors.cleanup()
             self.updated = True
-            # print(repr(self))
+            #print(repr(self))
             sleep(3)
 
     def memory(self):
-        print("MEMORY")
         while not self.updated:
             pass
         return [ "Memory           Free", 
@@ -91,7 +91,6 @@ class Monitor:
                  "Swap %4s%%%11s" % (format(self.swap_percent, ".1f"), '') ]
 
     def cpu(self):
-        print("CPU")
         while not self.updated:
             pass
         return [ "Load Average",
@@ -101,12 +100,10 @@ class Monitor:
     def sensors(self):
         while not self.updated:
             pass
-        print("SENSORS")
         return [ "Sensors", self.temp[0] if len(self.temp) > 0 else '', self.temp[1] if len(self.temp) > 1 else '' ]
 
     
     def media(self):
         while not self.updated:
             pass
-        print("MEDIA")
         return [ "Mediaplayer", self.media_title, self.media_artist ]
