@@ -1,0 +1,10 @@
+[Unit]
+Description=apex_monitor
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Binaries/apex7tkl_linux/
+ExecStart=python oled_daemon.py
+
+[Install]
+WantedBy=graphical.target
